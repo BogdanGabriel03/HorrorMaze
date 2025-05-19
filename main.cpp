@@ -173,14 +173,18 @@ void keyboard(unsigned char key, int x, int y)
 		break;
 	};
 
-	Collision cameraBox;
-	cameraBox.min = camera.Position - glm::vec3(0.1f);
-	cameraBox.max = camera.Position + glm::vec3(0.1f);
+	OBBCollision cameraBox(
+		camera.Position,
+		glm::vec3(0.5f, 1.0f, 0.5f),             // dimensiuni (ajustează după nevoie)
+		camera.Right,
+		camera.Up,
+		glm::normalize(glm::cross(camera.Right, camera.Up))
+	);
 
 	bool collided = false;
 	for (auto& wall : hallwayWalls) {
 
-		if (checkCollision(cameraBox, wall.boundary)) {
+		if (checkOBBCollision(cameraBox, wall.boundary)) {
 			collided = true;
 			break;
 		}

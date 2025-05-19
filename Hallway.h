@@ -14,24 +14,23 @@ struct WallSegment {
     glm::vec3 scale;
     float wallOffset;
 
-    Collision boundary;
+    OBBCollision boundary;
 
     void computeBoundary() {
         glm::vec3 halfScale = scale * 0.5f;
-        //printf("%f - %f - %f\t %f\t Pos: %f,%f,%f\n",halfScale.x,halfScale.y,halfScale.z, rotation, position.x, position.y, position.z);
 
-        // Fără rotație (0.0f): perete frontal/spate
-        if (rotation == 0.0f) {
-            boundary.min = position - glm::vec3(halfScale.x, halfScale.y, halfScale.z);
-            boundary.max = position + glm::vec3(halfScale.x, halfScale.y, halfScale.z);
-        }
-        // Rotație 90°: perete lateral
-        else if (rotation == 90.0f) {
-            boundary.min = position - glm::vec3(halfScale.z, halfScale.y, halfScale.x);
-            boundary.max = position + glm::vec3(halfScale.z, halfScale.y, halfScale.x);
-        }
+        // Axele inițiale (locale)
+        glm::vec3 xAxis(1, 0, 0);
+        glm::vec3 yAxis(0, 1, 0);
+        glm::vec3 zAxis(0, 0, 1);
 
-        //printf("Min: %f,%f,%f  -  Max: %f,%f,%f\n", boundary.min.x, boundary.min.y, boundary.min.z, boundary.max.x, boundary.max.y, boundary.max.z);
+        // Rotire în funcție de rotația peretelui
+        glm::mat4 rotMat = glm::rotate(glm::radians(rotation), glm::vec3(0, 1, 0));
+        glm::vec3 rotatedX = glm::vec3(rotMat * glm::vec4(xAxis, 0.0));
+        glm::vec3 rotatedY = glm::vec3(rotMat * glm::vec4(yAxis, 0.0));
+        glm::vec3 rotatedZ = glm::vec3(rotMat * glm::vec4(zAxis, 0.0));
+
+        boundary = OBBCollision(position, halfScale, rotatedX, rotatedY, rotatedZ);
     }
 };
 
