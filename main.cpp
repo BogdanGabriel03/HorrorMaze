@@ -360,23 +360,33 @@ void Display() {
 	inGameStateShaderProgramme->setFloat("xOffset", 0.0f);
 	inGameStateShaderProgramme->setFloat("mixPercent", mixPercent);
 
+	// floor and ceiling
 	glBindVertexArray(floor_vao);
+
+	// first floor texture
 	inGameStateShaderProgramme->setInt("useTextures", 0);
 	glm::mat4 floorModel = glm::mat4(1.0f);
 	if(floorOffset[0]) floorModel = glm::translate(floorModel, glm::vec3(0, 0, floorOffset[0]));
 	inGameStateShaderProgramme->setMat4("model", floorModel);
-	
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+	// first ceiling texture
+	inGameStateShaderProgramme->setInt("useTextures", 1);
+	floorModel = glm::translate(floorModel, glm::vec3(0.0, 10.0, 0.0));
+	inGameStateShaderProgramme->setMat4("model", floorModel);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	// second floor texture
+	inGameStateShaderProgramme->setInt("useTextures", 0);
 	floorModel = glm::mat4(1.0f);
 	if (floorOffset[1]) floorModel = glm::translate(floorModel, glm::vec3(0, 0, floorOffset[1]));
 	inGameStateShaderProgramme->setMat4("model", floorModel);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+	// second ceiling texture
 	inGameStateShaderProgramme->setInt("useTextures", 1);
-	glm::mat4 ceilingModel = glm::mat4(1.0f);
-	ceilingModel = glm::translate(ceilingModel, glm::vec3(0.0,10.0,0.0));
-	inGameStateShaderProgramme->setMat4("model", ceilingModel);
+	floorModel = glm::translate(floorModel, glm::vec3(0.0, 10.0, 0.0));
+	inGameStateShaderProgramme->setMat4("model", floorModel);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	glBindVertexArray(wall_vao);

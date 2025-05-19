@@ -51,8 +51,8 @@ std::vector<WallSegment> generateWallLayout() {
     walls.push_back({ glm::vec3(-4.0f, 0.0f, 18.0f), 0.0f, glm::vec3(2.3f, 10.0f, 0.1f) }); // Behind wall
     
     for (int i = -4; i < 7; ++i) {
-        walls.push_back({ glm::vec3(5.0f, 0.0f, -i * 4.0f), 90.0f, glm::vec3(4.0f, 10.0f, 0.1f) }); // Right wall
-        walls.push_back({ glm::vec3(-5.0f, 0.0f, -i * 4.0f), 90.0f, glm::vec3(4.0f, 10.0f, 0.1f) }); // Left wall
+        walls.push_back({ glm::vec3(5.0f, 0.0f, -i * 4.0f), 90.0f, glm::vec3(4.0f, 10.0f, 0.1f),20 }); // Right wall
+        walls.push_back({ glm::vec3(-5.0f, 0.0f, -i * 4.0f), 90.0f, glm::vec3(4.0f, 10.0f, 0.1f),20 }); // Left wall
     }
     walls.push_back({ glm::vec3(-5.0f, 0.0f, -7 * 4.0f), 90.0f, glm::vec3(4.0f, 10.0f, 0.1f),30 });
     walls.push_back({ glm::vec3(-5.0f, 0.0f, -8 * 4.0f), 90.0f, glm::vec3(4.0f, 10.0f, 0.1f),30 });
@@ -81,21 +81,15 @@ std::vector<WallSegment> generateWallLayout() {
 
 void updateHallway(std::vector<WallSegment>& walls,glm::vec3 playerPos) {
     for (int i = 3;i < 47;++i) {
-        if (walls[i].position.z > playerPos.z + 28) {
-            if (i >= 25) {
-                walls[i].position.x += walls[i].wallOffset;
-                walls[i].wallOffset *= -1;
-            }
-            else {
-                if (walls[i].position.x <= 5) {
-                    walls[i].position.x += 20;
-                }
-                else {
-                    walls[i].position.x -= 20;
-                }
-            }
+        if (walls[i].position.z > playerPos.z + 34) {
+            walls[i].position.x += walls[i].wallOffset;
+            walls[i].wallOffset *= -1;
             walls[i].position.z -= 68;
-            std::cout << i << ": " << walls[i].position.x << " " << walls[i].position.z << "\n";
+        }
+        else if (walls[i].position.z < playerPos.z - 34) {
+            walls[i].position.x += walls[i].wallOffset;
+            walls[i].wallOffset *= -1;
+            walls[i].position.z += 68;
         }
         walls[i].computeBoundary();
     }
