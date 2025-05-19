@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{61496c05-4858-408f-9b8b-db2e35d00afc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include">
+      <UniqueIdentifier>{f443a26d-237e-40f2-92a7-cd882b0a33ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Functions">
+      <UniqueIdentifier>{19fc0842-f71f-4bca-8e3e-94b195e077de}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="StbImageImplementation.cpp">
+      <Filter>Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="Hallway.cpp">
+      <Filter>Functions</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Shader.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="Hallway.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="Collision.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="fragment_paused.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="fragment.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="vertex.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="vertex_paused.vert">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>
