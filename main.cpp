@@ -11,6 +11,7 @@
 #include "Camera.h"
 #include "stb_image.h"
 #include "Hallway.h"
+#include "Light.h"
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -30,23 +31,18 @@ bool firstMouse = true;
 // camera 
 Camera camera(glm::vec3(0.0f, 0.0f, 15.0f));
 
-// walls
+// walls & doors
 std::vector<WallSegment> hallwayWalls;
+std::vector<DoorSegment> hallwayDoors;
+std::vector<LightSource> hallwayLights;
 
 float l = 50.0;
 float inGame_floorVertices[] = {
-	 l,  0.0,  l,	0.0,0.0,
-	 l,  0.0, -l,	0.0,15.0,
-	-l,  0.0,  l,	15.0,0.0,
-	-l,  0.0, -l,	15.0,15.0,
-};
-
-float wallVertices[] = {
-	// image coord			// texture coord
-	-6.0,	0.0,  -10.0,	0.0,0.0,	
-	-6.0,	10.0, -10.0,	0.0,1.0,
-	-6.0,	0.0,  20.0,		2.0,0.0,
-	-6.0,	10.0, 20.0,		2.0,1.0
+	// position		// texture coord	// normals
+	 l,  0.0,  l,	0.0,0.0,			0.0f,1.0f,0.0f,
+	 l,  0.0, -l,	0.0,15.0,			0.0f,1.0f,0.0f,
+	-l,  0.0,  l,	15.0,0.0,			0.0f,1.0f,0.0f,
+	-l,  0.0, -l,	15.0,15.0,			0.0f,1.0f,0.0f,
 };
 
 float pausedState_screenVertices[] = {
@@ -61,28 +57,21 @@ unsigned int pausedState_idx[] = {
 	1,3,2
 };
 
-glm::vec3 cubePositions[] = {
-	glm::vec3(0.0f,  3.0f,  0.0f),
-	glm::vec3(5.0f,  3.0f, 0.0f),
-	glm::vec3(7.5f, 3.0f, 2.5f),
-	glm::vec3(5.0f, 3.0f, 5.0f),
-	glm::vec3(2.5f, 3.0f, 7.5f),
-	glm::vec3(0.0f,  3.0f, 5.0f),
-	glm::vec3(-2.5f, 3.0f, 7.5f),
-	glm::vec3(-5.0f,  3.0f, 2.5f),
-	glm::vec3(-2.5f,  3.0f, -2.5f),
-	glm::vec3(0.0f,  3.0f, -5.0f)
-};
-
 Shader* inGameStateShaderProgramme = NULL;
 Shader* pausedStateShaderProgramme = NULL;
+Shader* lightsourceShaderProgramme = NULL;
 
+// VAOs VBOs EBOs
 unsigned int pausedState_vao, pausedState_vbo, pausedState_ebo;
 unsigned int floor_vao, floor_vbo, floor_ebo;
 unsigned int wall_vbo, wall_vao;
+unsigned int door_vao, door_vbo;
+unsigned int light_vao;
+
+// TEXTURES 
 int imgW, imgH, nrChannels;
-unsigned int floorTexture, wallTexture, ceilingTexture;
-unsigned char* floorImg, * wallImg, *ceilingImg;
+unsigned int floorTexture, wallTexture, ceilingTexture, doorTexture;
+unsigned char* floorImg, * wallImg, *ceilingImg, *doorImg;
 float mixPercent = 0.2;
 
 // floor offset
@@ -138,6 +127,17 @@ void keyboard(unsigned char key, int x, int y)
 	glm::vec3 oldPos = camera.Position;
 
 	switch (key) {
+	case 'f':
+		for (auto& door : hallwayDoors) {
+			float distance = glm::distance(camera.Position, door.getPosition());
+			std::cout << distance << "\n";
+			if (distance < 10.0f && !door.isAnimating()) {
+				door.setIsAnimating(!door.isAnimating());
+				door.setIsOpen(!door.isOpen());
+				//std::cout << "Open/Animating : " << door.isOpen() << "/" << door.isAnimating() << "\n";
+			}
+		}
+		break;
 	case 'x':
 		if (inGameStateShaderProgramme != NULL) {
 			if (mixPercent <= 0.9) {
@@ -184,8 +184,16 @@ void keyboard(unsigned char key, int x, int y)
 	bool collided = false;
 	for (auto& wall : hallwayWalls) {
 
-		if (checkOBBCollision(cameraBox, wall.boundary)) {
+		if (checkOBBCollision(cameraBox, wall.getBoundary())) {
 			collided = true;
+			std::cout << "Collided with wall!\n";
+			break;
+		}
+	}
+	for (auto& door : hallwayDoors) {
+		if (checkOBBCollision(cameraBox, door.getBoundary())) {
+			collided = true;
+			std::cout << "Collided with door!\n";
 			break;
 		}
 	}
@@ -201,9 +209,12 @@ void loadImage(const char* path, unsigned char** img) {
 	*img = stbi_load(path, &imgW, &imgH, &nrChannels, 0);
 }
 
-void generateTexture(unsigned char* img, unsigned int *texture,int opt=0) {
+void generateTexture(unsigned char* img, unsigned int *texture) {
 	glGenTextures(1, texture);
 	glBindTexture(GL_TEXTURE_2D, *texture);
+	GLenum format = GL_RGB;
+	if (nrChannels == 4)
+		format = GL_RGBA;
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -211,12 +222,7 @@ void generateTexture(unsigned char* img, unsigned int *texture,int opt=0) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	if (img) {
-		if (opt == 0) {
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imgW, imgH, 0, GL_RGB, GL_UNSIGNED_BYTE, img);
-		}
-		else {
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imgW, imgH, 0, GL_RGBA, GL_UNSIGNED_BYTE, img);
-		}
+		glTexImage2D(GL_TEXTURE_2D, 0, format, imgW, imgH, 0, format, GL_UNSIGNED_BYTE, img);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else {
@@ -243,9 +249,6 @@ void createProgram() {
 	glGenBuffers(1, &floor_vbo);
 	glGenBuffers(1, &floor_ebo);
 
-	glGenVertexArrays(1, &wall_vao);
-	glGenBuffers(1, &wall_vbo);
-
 	glBindVertexArray(floor_vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, floor_vbo);
@@ -254,31 +257,25 @@ void createProgram() {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, floor_ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(pausedState_idx), pausedState_idx, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(2);
 
-	glBindVertexArray(wall_vao);
-
-	glBindBuffer(GL_ARRAY_BUFFER, wall_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(wallVertices), wallVertices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	// loading images and generating textures 
 
 	loadImage("floor.png", &floorImg);
-	generateTexture(floorImg,&floorTexture,1);
+	generateTexture(floorImg,&floorTexture);
 	loadImage("ceiling.jpg", &ceilingImg);
 	generateTexture(ceilingImg, &ceilingTexture);
 	loadImage("wall.jpg", &wallImg);
 	generateTexture(wallImg, &wallTexture);
+	loadImage("door.png", &doorImg);
+	generateTexture(doorImg, &doorTexture);
 
 
 	// GAME_PAUSED STATE
@@ -304,6 +301,7 @@ void createProgram() {
 
 	inGameStateShaderProgramme = new Shader("vertex.vert", "fragment.frag");
 	pausedStateShaderProgramme = new Shader("vertex_paused.vert", "fragment_paused.frag");
+	lightsourceShaderProgramme = new Shader("light_source.vert", "light_source.frag");
 
 	// INITILAIZE UNIFORMS
 
@@ -311,6 +309,7 @@ void createProgram() {
 	inGameStateShaderProgramme->setInt("floorTexture", 0);
 	inGameStateShaderProgramme->setInt("ceilingTexture", 1);
 	inGameStateShaderProgramme->setInt("wallTexture", 2);
+	inGameStateShaderProgramme->setInt("doorTexture", 3);
 
 	pausedStateShaderProgramme->use();
 	pausedStateShaderProgramme->setVec4("overlayColor", glm::vec4(0, 0, 0, 0.75));
@@ -320,6 +319,10 @@ void createProgram() {
 	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	wall_vao = createWallMesh();
 	hallwayWalls = generateWallLayout();
+	door_vao = createWallMesh();
+	hallwayDoors = generateDoorsLayout();
+	light_vao = letThereBeLight();
+	hallwayLights = generateLightsLayout();
 }
 
 void Display() {
@@ -341,7 +344,7 @@ void Display() {
 		glutSetCursor(GLUT_CURSOR_NONE);
 	}
 
-	updateHallway(hallwayWalls, camera.Position);
+	updateHallway(hallwayWalls, hallwayDoors,hallwayLights, camera.Position, deltaTime);
 	updateFloor(floorOffset, camera.Position);
 
 	// ALWAYS RENDER THE 3D SCENE (whether paused or not)
@@ -351,18 +354,43 @@ void Display() {
 	glBindTexture(GL_TEXTURE_2D, ceilingTexture);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, wallTexture);
-
-	inGameStateShaderProgramme->use();
-
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, doorTexture);
+	
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom),
 		(float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-	inGameStateShaderProgramme->setMat4("projection", projection);
-
 	glm::mat4 view = camera.GetViewMatrix();
+
+	// ligth source
+	lightsourceShaderProgramme->use();
+	lightsourceShaderProgramme->setMat4("projection", projection);
+	lightsourceShaderProgramme->setMat4("view", view);
+	lightsourceShaderProgramme->setFloat("xOffset", 0.0f);
+
+	glBindVertexArray(light_vao);
+
+	for (auto& light : hallwayLights) {
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, light.getPosition());
+		model = glm::rotate(model, light.getRotation(),glm::vec3(0,1,0));
+		lightsourceShaderProgramme->setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
+
+	inGameStateShaderProgramme->use();
+	for (int i = 0; i < hallwayLights.size(); ++i) {
+		std::string base = "lights[" + std::to_string(i) + "]";
+		inGameStateShaderProgramme->setVec3(base + ".position", hallwayLights[i].getPosition());
+		inGameStateShaderProgramme->setVec3(base + ".color", hallwayLights[i].getLightColor());
+		inGameStateShaderProgramme->setFloat(base + ".intensity", hallwayLights[i].getLightIntensity());
+	}
+	inGameStateShaderProgramme->setMat4("projection", projection);
 	inGameStateShaderProgramme->setMat4("view", view);
 
 	inGameStateShaderProgramme->setFloat("xOffset", 0.0f);
 	inGameStateShaderProgramme->setFloat("mixPercent", mixPercent);
+	inGameStateShaderProgramme->setVec3("viewPos", camera.Position);
+	//inGameStateShaderProgramme->setVec3("lightColor", glm::vec3(0.6, 0.05, 0.05));
 
 	// floor and ceiling
 	glBindVertexArray(floor_vao);
@@ -393,18 +421,39 @@ void Display() {
 	inGameStateShaderProgramme->setMat4("model", floorModel);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+	// walls 
 	glBindVertexArray(wall_vao);
 	inGameStateShaderProgramme->setInt("useTextures", 2);
 
 	for (auto& wall : hallwayWalls) {
 		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, wall.position);
-		model = glm::rotate(model, glm::radians(wall.rotation), glm::vec3(0, 1, 0));
-		model = glm::scale(model, wall.scale);
+		model = glm::translate(model, wall.getPosition());
+		model = glm::rotate(model, glm::radians(wall.getRotation()), glm::vec3(0, 1, 0));
+		model = glm::scale(model, wall.getScale());
 		inGameStateShaderProgramme->setMat4("model", model);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
 
+	// THE door
+	glBindVertexArray(door_vao);
+	inGameStateShaderProgramme->setInt("useTextures", 3);
+
+	for (auto& door : hallwayDoors) {
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, door.getPosition());
+		model = glm::translate(model, glm::vec3(-0.5f * 5.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(door._angle), glm::vec3(0, 1, 0));
+		model = glm::translate(model, glm::vec3(0.5f * 5.0f, 0.0f, 0.0f));
+		model = glm::scale(model, door.getScale());
+		inGameStateShaderProgramme->setMat4("model", model);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		model = glm::mat4(1.0f);
+		inGameStateShaderProgramme->setMat4("model", model);
+	}
+
+	inGameStateShaderProgramme->setInt("useTextures", -1);
+	inGameStateShaderProgramme->setVec4("objColor", glm::vec4(0.0, 1.0, 1.0, 1.0));
 
 	// Only render pause overlay if paused
 	if (gameState == GAME_PAUSED) {

@@ -28,6 +28,9 @@
     <ClCompile Include="Hallway.cpp">
       <Filter>Functions</Filter>
     </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>Functions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
@@ -42,6 +45,9 @@
     <ClInclude Include="Collision.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fragment_paused.frag">
@@ -54,6 +60,12 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="vertex_paused.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="light_source.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="light_source.frag">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

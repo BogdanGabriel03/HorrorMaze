@@ -104,6 +104,9 @@ void Shader::setMat4(const std::string& name, glm::mat4 matrix) const
 void Shader::setVec4(const std::string& name, glm::vec4 vec) {
     glUniform4fv(glGetUniformLocation(PID, name.c_str()), 1, glm::value_ptr(vec));
 }
+void Shader::setVec3(const std::string& name, glm::vec3 vec) {
+    glUniform3fv(glGetUniformLocation(PID, name.c_str()), 1, glm::value_ptr(vec));
+}
 int Shader::getLocation(locationType type, const std::string& name) {
     switch (type) {
     case SHADER_UNIFORM:
