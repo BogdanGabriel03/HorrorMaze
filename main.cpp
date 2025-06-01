@@ -7,11 +7,11 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/constants.hpp>
 
-#include "Shader.h"
-#include "Camera.h"
+#include "custom/Shader.h"
+#include "custom/Camera.h"
 #include "stb_image.h"
-#include "Hallway.h"
-#include "Light.h"
+#include "custom/Hallway.h"
+#include "custom/Light.h"
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -249,13 +249,13 @@ void createProgram() {
 
 	// loading images and generating textures 
 
-	loadImage("floor.png", &floorImg);
+	loadImage("imagini/floor.png", &floorImg);
 	generateTexture(floorImg,&floorTexture);
-	loadImage("ceiling.jpg", &ceilingImg);
+	loadImage("imagini/ceiling.jpg", &ceilingImg);
 	generateTexture(ceilingImg, &ceilingTexture);
-	loadImage("wall.jpg", &wallImg);
+	loadImage("imagini/wall.jpg", &wallImg);
 	generateTexture(wallImg, &wallTexture);
-	loadImage("door.png", &doorImg);
+	loadImage("imagini/door.png", &doorImg);
 	generateTexture(doorImg, &doorTexture);
 
 
@@ -279,9 +279,9 @@ void createProgram() {
 	glBindVertexArray(0);
 
 	// CREATE THE SHADERS 
-	inGameStateShaderProgramme = new Shader("vertex.vert", "fragment.frag");
-	pausedStateShaderProgramme = new Shader("vertex_paused.vert", "fragment_paused.frag");
-	lightsourceShaderProgramme = new Shader("light_source.vert", "light_source.frag");
+	inGameStateShaderProgramme = new Shader("shaders/vertex.vert", "shaders/fragment.frag");
+	pausedStateShaderProgramme = new Shader("shaders/vertex_paused.vert", "shaders/fragment_paused.frag");
+	lightsourceShaderProgramme = new Shader("shaders/light_source.vert", "shaders/light_source.frag");
 
 	// INITILAIZE UNIFORMS
 	inGameStateShaderProgramme->use();

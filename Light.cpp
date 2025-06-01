@@ -1,4 +1,4 @@
-#include "Light.h"
+#include "custom/Light.h"
 
 GLuint letThereBeLight() {
     float vertices[] = {

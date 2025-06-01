@@ -1,4 +1,4 @@
-#include "Hallway.h"
+#include "custom/Hallway.h"
 
 #define Z_OFFSET 216
 #define WALL_OFFSET_Y 5
