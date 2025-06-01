@@ -43,14 +43,8 @@ std::vector<LightSource> hallwayLights;
 std::vector<FloorSegment> hallwayFloor;
 std::vector<HallwaySegment*> hallwaySegments;
 
-//float l = 108.0;
-//float inGame_floorVertices[] = {
-//	// position		// texture coord	// normals
-//	 l,  0.0,  l,	0.0,0.0,			0.0f,1.0f,0.0f,
-//	 l,  0.0, -l,	0.0,15.0,			0.0f,1.0f,0.0f,
-//	-l,  0.0,  l,	15.0,0.0,			0.0f,1.0f,0.0f,
-//	-l,  0.0, -l,	15.0,15.0,			0.0f,1.0f,0.0f,
-//};
+// flashlight Flag
+bool flashlightOn = false;
 
 float pausedState_screenVertices[] = {
 	-1.0, -1.0, 0.0,	
@@ -73,7 +67,7 @@ unsigned int pausedState_vao, pausedState_vbo, pausedState_ebo;
 unsigned int floor_vao; //floor_vbo, floor_ebo;
 unsigned int wall_vao;
 unsigned int door_vao;
-unsigned int light_vao;
+unsigned int light_vao, flashLight_vao;
 
 // TEXTURES 
 int imgW, imgH, nrChannels;
@@ -134,6 +128,9 @@ void keyboard(unsigned char key, int x, int y)
 	glm::vec3 oldPos = camera.Position;
 
 	switch (key) {
+	case 'q':
+		flashlightOn = !flashlightOn;
+		break;
 	case 'f':
 		for (auto& door : hallwayDoors) {
 			float distance = glm::distance(camera.Position, door.getPosition());
@@ -250,29 +247,6 @@ void createProgram() {
 
 	glewInit();
 
-	// IN_GAME STATE
-
-	/*glGenVertexArrays(1, &floor_vao);
-	glGenBuffers(1, &floor_vbo);
-	glGenBuffers(1, &floor_ebo);
-
-	glBindVertexArray(floor_vao);
-
-	glBindBuffer(GL_ARRAY_BUFFER, floor_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(inGame_floorVertices), inGame_floorVertices, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, floor_ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(pausedState_idx), pausedState_idx, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
-	glEnableVertexAttribArray(1);*/
-
 	// loading images and generating textures 
 
 	loadImage("floor.png", &floorImg);
@@ -305,13 +279,11 @@ void createProgram() {
 	glBindVertexArray(0);
 
 	// CREATE THE SHADERS 
-
 	inGameStateShaderProgramme = new Shader("vertex.vert", "fragment.frag");
 	pausedStateShaderProgramme = new Shader("vertex_paused.vert", "fragment_paused.frag");
 	lightsourceShaderProgramme = new Shader("light_source.vert", "light_source.frag");
 
 	// INITILAIZE UNIFORMS
-
 	inGameStateShaderProgramme->use();
 	inGameStateShaderProgramme->setInt("floorTexture", 0);
 	inGameStateShaderProgramme->setInt("ceilingTexture", 1);
@@ -322,8 +294,8 @@ void createProgram() {
 	pausedStateShaderProgramme->setVec4("overlayColor", glm::vec4(0, 0, 0, 0.75));
 
 	// UNCOMMENT THIS TO DRAW IN WIREFRME POLYGONS
-	
 	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
 	wall_vao = createWallMesh();
 	hallwayWalls = generateWallLayout();
 	door_vao = createWallMesh();
@@ -332,6 +304,7 @@ void createProgram() {
 	hallwayLights = generateLightsLayout();
 	floor_vao = createFloorMesh();
 	hallwayFloor = generateFloorLayout();
+	flashLight_vao = letThereBeLight();
 
 	for (auto& wall : hallwayWalls) {
 		hallwaySegments.push_back(&wall);
@@ -410,6 +383,18 @@ void Display() {
 		inGameStateShaderProgramme->setFloat(base + ".linear", linear);
 		inGameStateShaderProgramme->setFloat(base + ".quadratic", quadratic);
 	}
+	// the flashlight
+	inGameStateShaderProgramme->setBool("flashlightOn", flashlightOn);
+	inGameStateShaderProgramme->setVec3("flashlight.position", camera.Position);
+	inGameStateShaderProgramme->setVec3("flashlight.direction", camera.Front);
+	inGameStateShaderProgramme->setVec3("flashlight.color", glm::vec3(0.7,0.6,0.1));
+	inGameStateShaderProgramme->setFloat("flashlight.intensity", 0.6);
+	inGameStateShaderProgramme->setFloat("flashlight.cutOff", glm::cos(glm::radians(12.5f)));
+	inGameStateShaderProgramme->setFloat("flashlight.constant", 1.0f);
+	inGameStateShaderProgramme->setFloat("flashlight.linear", 0.09f);
+	inGameStateShaderProgramme->setFloat("flashlight.quadric", 0.032f);
+	inGameStateShaderProgramme->setFloat("flashlight.outerCutOff", glm::cos(glm::radians(17.5f)));
+
 	inGameStateShaderProgramme->setMat4("projection", projection);
 	inGameStateShaderProgramme->setMat4("view", view);
 
@@ -434,29 +419,6 @@ void Display() {
 		}
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
-	//glm::mat4 floorModel = glm::mat4(1.0f);
-	//if(floorOffset[0]) floorModel = glm::translate(floorModel, glm::vec3(0, 0, floorOffset[0]));
-	//inGameStateShaderProgramme->setMat4("model", floorModel);
-	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-	//// first ceiling texture
-	//inGameStateShaderProgramme->setInt("useTextures", 1);
-	//floorModel = glm::translate(floorModel, glm::vec3(0.0, 10.0, 0.0));
-	//inGameStateShaderProgramme->setMat4("model", floorModel);
-	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-	//// second floor texture
-	//inGameStateShaderProgramme->setInt("useTextures", 0);
-	//floorModel = glm::mat4(1.0f);
-	//if (floorOffset[1]) floorModel = glm::translate(floorModel, glm::vec3(0, 0, floorOffset[1]));
-	//inGameStateShaderProgramme->setMat4("model", floorModel);
-	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-	//// second ceiling texture
-	//inGameStateShaderProgramme->setInt("useTextures", 1);
-	//floorModel = glm::translate(floorModel, glm::vec3(0.0, 10.0, 0.0));
-	//inGameStateShaderProgramme->setMat4("model", floorModel);
-	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	// walls 
 	glBindVertexArray(wall_vao);

@@ -8,6 +8,10 @@ struct LightSource {
 	float constant;
 	float linear;
 	float quadratic;
+
+	vec3 direction;
+	float cutOff;
+	float outerCutOff;
 };
 
 in vec2 texCoord;
@@ -26,6 +30,8 @@ uniform float mixPercent;
 
 uniform int useTextures;
 uniform LightSource lights[4];
+uniform LightSource flashlight;
+uniform bool flashlightOn;
 uniform bool hitByLight[4];
 uniform vec4 objColor;
 uniform vec3 viewPos;
@@ -57,6 +63,37 @@ vec3 CalculatePointLight(LightSource light, vec3 normal, vec3 fragPos, vec3 view
 	return (ambient + diffuse + specular);
 }
 
+vec3 CalculateFlashlightImpact(LightSource light, vec3 normal, vec3 fragPos, vec3 viewDir) {
+	vec3 lightDir = normalize(light.position - fragPos);
+	float theta = dot(lightDir, normalize(-light.direction));
+
+		float epsilon = (light.cutOff - light.outerCutOff);
+		float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
+
+		vec3 ambient = light.intensity * light.color;
+
+		float diff = max(dot(normal, lightDir), 0.0);
+		vec3 diffuse = diff * light.color * light.intensity;
+
+		vec3 reflectDir = reflect(-lightDir, normal);
+		float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+		vec3 specular = 0.3 * spec * light.color;
+
+		ambient *=intensity;
+		diffuse *= intensity;
+        specular *= intensity;
+
+		float distance = length(light.position - fragPos);
+		float attenuation = 1.0 / (light.constant + light.linear * distance + 
+  			     light.quadratic * (distance * distance)); 
+
+		ambient *= attenuation;
+		diffuse *= attenuation;
+        //specular *= attenuation;
+
+		return ambient + diffuse + specular;
+}
+
 void main()
 {
 	
@@ -74,11 +111,9 @@ void main()
 			result += CalculatePointLight(lights[i], norm, FragPos, viewDir);
 		}
 	}
-	//vec3 lighting = ambient + diffuse + specular;
+	if(flashlightOn) result += CalculateFlashlightImpact(flashlight, norm, FragPos, viewDir);
+	
 	if(result == vec3(0.0f)) result = vec3(0.024f, 0.002f, 0.002f);
-	//lighting.x = max(lighting.x,0.096f);
-	//lighting.y = max(lighting.y,0.008f);
-	//lighting.z = max(lighting.z,0.008f);
 
 	if(useTextures==-1) {
 		materialColor = vec3(objColor);

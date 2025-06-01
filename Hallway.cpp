@@ -310,10 +310,5 @@ void updateLightView(std::vector<LightSource>& lights, std::vector<HallwaySegmen
                 }
             }
         }
-        /*if (j == 142 || j==143 || j==144 || j==145) {
-            std::cout << destination->getPosition() << "\n";
-            for (int k = 0;k < 4;++k) std::cout << j << ": " << destination->getLitBy(k) << " ";
-            std::cout << "\n";
-        }*/
     }
 }
