@@ -18,6 +18,7 @@ inline std::ostream& operator<<(std::ostream& os, const glm::vec3& vec) {
 class HallwaySegment {
 protected: 
     glm::vec3 position;
+    glm::vec3 normal;
     float rotation;
     HALLWAY_SEGMENT_TYPE type;
     glm::vec3 scale;
@@ -49,8 +50,8 @@ public:
         boundary = OBBCollision(position, halfScale, rotatedX, rotatedY, rotatedZ);
     }
 
-    HallwaySegment(glm::vec3 pos, float rot, glm::vec3 scale, HALLWAY_SEGMENT_TYPE type)
-        : position(pos), rotation(rot), scale(scale),type(type) {
+    HallwaySegment(glm::vec3 pos, float rot, glm::vec3 scale, glm::vec3 _normal, HALLWAY_SEGMENT_TYPE type)
+        : position(pos), rotation(rot), scale(scale),type(type), normal(_normal) {
         for (int i = 0;i < 4;++i) {
             litBy[i] = 0;
         }
@@ -90,18 +91,22 @@ public:
     bool getLitBy(int idx) {
         return litBy[idx];
     }
+
+    glm::vec3 getNormal() {
+        return normal;
+    }
 };
 
 class WallSegment : public HallwaySegment{
 public:
-    WallSegment(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor, HALLWAY_SEGMENT_TYPE type=WALL) : HallwaySegment(pos,rotAngle,scaleFactor,type) {
+    WallSegment(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor,glm::vec3 normal, HALLWAY_SEGMENT_TYPE type=WALL) : HallwaySegment(pos,rotAngle,scaleFactor,normal,type) {
         
     }
 };
 
 class FloorSegment : public HallwaySegment {
 public:
-    FloorSegment(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor, HALLWAY_SEGMENT_TYPE type = FLOOR) : HallwaySegment(pos, rotAngle, scaleFactor, type) {
+    FloorSegment(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor, glm::vec3 normal, HALLWAY_SEGMENT_TYPE type = FLOOR) : HallwaySegment(pos, rotAngle, scaleFactor, normal, type) {
 
     }
 };
@@ -114,7 +119,7 @@ public:
     float _angle;
     float _openSpeed;
 
-    DoorSegment(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor, HALLWAY_SEGMENT_TYPE type=DOOR, float angle=0) : HallwaySegment(pos, rotAngle, scaleFactor, type) {
+    DoorSegment(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor, glm::vec3 normal, HALLWAY_SEGMENT_TYPE type=DOOR, float angle=0) : HallwaySegment(pos, rotAngle, scaleFactor, normal, type) {
         _angle = angle;
         _isOpen = false;
         _isAnimating = false;
@@ -163,7 +168,7 @@ private:
     glm::vec3 lightColor;
     float intensity;
 public:
-    LightSource(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor, HALLWAY_SEGMENT_TYPE type = LIGHT) : HallwaySegment(pos, rotAngle, scaleFactor, type) {
+    LightSource(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor, glm::vec3 normal, HALLWAY_SEGMENT_TYPE type = LIGHT) : HallwaySegment(pos, rotAngle, scaleFactor, normal, type) {
         lightColor = glm::vec3(0.6, 0.05, 0.05);
         intensity = 0.08;
     }

@@ -19,8 +19,8 @@ const unsigned int SCR_HEIGHT = 600;
 
 // lightning constants
 const float constant = 1.0f;
-const float linear = 0.007f;
-const float quadratic = 0.0002f;
+const float linear = 0.010f;
+const float quadratic = 0.00045f;
 
 // Time between current frame and last frame
 float deltaTime = 0.0f;	

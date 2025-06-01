@@ -33,7 +33,7 @@ uniform vec3 viewPos;
 vec3 CalculatePointLight(LightSource light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
 	vec3 lightDir = normalize(light.position - fragPos);
-	
+
 	// diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
 
@@ -51,8 +51,8 @@ vec3 CalculatePointLight(LightSource light, vec3 normal, vec3 fragPos, vec3 view
 	vec3 specular = 0.3 * spec * light.color;
 
 	ambient  *= attenuation;
-    diffuse  *= attenuation;
-    specular *= attenuation;
+    diffuse  *= attenuation * attenuation;
+    specular *= attenuation * attenuation;
 
 	return (ambient + diffuse + specular);
 }

@@ -103,55 +103,61 @@ std::vector<WallSegment> generateWallLayout() {
     std::vector<WallSegment> walls;
     float startPointZ = 64.0f;
     
-    walls.push_back(WallSegment(glm::vec3(-4.25f, WALL_OFFSET_Y, startPointZ), 0.0f, glm::vec3(3.5f, WALL_SCALE_Y, 0.1f))); // Behind wall
-    walls.push_back(WallSegment(glm::vec3(4.25f, WALL_OFFSET_Y, startPointZ), 0.0f, glm::vec3(3.5f, WALL_SCALE_Y, 0.1f))); // Behind wall
+    walls.push_back(WallSegment(glm::vec3(-4.25f, WALL_OFFSET_Y, startPointZ-0.03f), 0.0f, glm::vec3(3.5f, WALL_SCALE_Y, 0.1f), glm::vec3(0,0,-1))); // Behind wall
+    walls.push_back(WallSegment(glm::vec3(4.25f, WALL_OFFSET_Y, startPointZ- 0.03f), 0.0f, glm::vec3(3.5f, WALL_SCALE_Y, 0.1f), glm::vec3(0, 0,-1))); // Behind wall
+
+    walls.push_back(WallSegment(glm::vec3(-4.25f, WALL_OFFSET_Y, startPointZ + 0.03f), 0.0f, glm::vec3(3.5f, WALL_SCALE_Y, 0.1f), glm::vec3(0, 0, 1))); // Behind wall
+    walls.push_back(WallSegment(glm::vec3(4.25f, WALL_OFFSET_Y, startPointZ + 0.03f), 0.0f, glm::vec3(3.5f, WALL_SCALE_Y, 0.1f), glm::vec3(0, 0, 1))); // Behind wall
 
     startPointZ -= WALL_SCALE_X/2;
 
     for (int i = 0; i < 17; ++i) {
-        walls.push_back(WallSegment(glm::vec3(6.0f, WALL_OFFSET_Y, startPointZ), 90.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f))); // Right wall
-        walls.push_back(WallSegment(glm::vec3(-6.0f, WALL_OFFSET_Y, startPointZ), -90.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f))); // Left wall
+        walls.push_back(WallSegment(glm::vec3(6.0f, WALL_OFFSET_Y, startPointZ), 90.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f), glm::vec3(-1, 0, 0))); // Right wall
+        walls.push_back(WallSegment(glm::vec3(-6.0f, WALL_OFFSET_Y, startPointZ), -90.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f), glm::vec3(1, 0, 0))); // Left wall
         startPointZ -= 4.0f;
     }
     for (int i = 0;i < 3;++i) {
-        walls.push_back(WallSegment(glm::vec3(-6.0f, WALL_OFFSET_Y, startPointZ), -90.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f))); // Left wall
+        walls.push_back(WallSegment(glm::vec3(-6.0f, WALL_OFFSET_Y, startPointZ), -90.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f), glm::vec3(1, 0, 0))); // Left wall
         startPointZ -= 4.0f;
     }
     
     startPointZ -= WALL_SCALE_X / 2;
     // Right turn
     for (int i = 0; i < 7; ++i) {
-        walls.push_back(WallSegment(glm::vec3(8.0f + i * 4.0f, WALL_OFFSET_Y, startPointZ+16.0f), 0.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f))); // Inner corner
-        walls.push_back(WallSegment(glm::vec3(-4.0f + i * 4.0f, WALL_OFFSET_Y, startPointZ+4.0f), 180.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f)));  // Outer corner
+        walls.push_back(WallSegment(glm::vec3(8.0f + i * 4.0f, WALL_OFFSET_Y, startPointZ+16.0f), 0.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f), glm::vec3(0, 0, -1))); // Inner corner
+        walls.push_back(WallSegment(glm::vec3(-4.0f + i * 4.0f, WALL_OFFSET_Y, startPointZ+4.0f), 180.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f), glm::vec3(0, 0, 1)));  // Outer corner
     }
 
-    walls.push_back(WallSegment(glm::vec3(23.75f, WALL_OFFSET_Y, -36.0f), 0.0f, glm::vec3(3.5f, WALL_SCALE_Y, 0.1f))); // Behind wall
-    walls.push_back(WallSegment(glm::vec3(32.25f, WALL_OFFSET_Y, -36.0f), 0.0f, glm::vec3(3.5f, WALL_SCALE_Y, 0.1f))); // Behind wall
+    walls.push_back(WallSegment(glm::vec3(23.75f, WALL_OFFSET_Y, -36.0f - 0.03f), 0.0f, glm::vec3(3.5f, WALL_SCALE_Y, 0.1f), glm::vec3(0, 0, -1))); // Behind wall
+    walls.push_back(WallSegment(glm::vec3(32.25f, WALL_OFFSET_Y, -36.0f - 0.03f), 0.0f, glm::vec3(3.5f, WALL_SCALE_Y, 0.1f), glm::vec3(0, 0, -1))); // Behind wall
+
+    walls.push_back(WallSegment(glm::vec3(23.75f, WALL_OFFSET_Y, -36.0f + 0.03f), 0.0f, glm::vec3(3.5f, WALL_SCALE_Y, 0.1f), glm::vec3(0, 0, 1))); // Behind wall
+    walls.push_back(WallSegment(glm::vec3(32.25f, WALL_OFFSET_Y, -36.0f + 0.03f), 0.0f, glm::vec3(3.5f, WALL_SCALE_Y, 0.1f), glm::vec3(0, 0, 1))); // Behind wall
 
     startPointZ += 14;
     // New hallway
     for (int i = 0;i < 20;++i) {
         if (i >= 3 && i <= 16) {
-            walls.push_back(WallSegment(glm::vec3(22.0f, WALL_OFFSET_Y, startPointZ), -90.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f)));
+            walls.push_back(WallSegment(glm::vec3(22.0f, WALL_OFFSET_Y, startPointZ), -90.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f), glm::vec3(1, 0, 0)));
         }
-        walls.push_back(WallSegment(glm::vec3(34.0f, WALL_OFFSET_Y, startPointZ), 90.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f)));
+        walls.push_back(WallSegment(glm::vec3(34.0f, WALL_OFFSET_Y, startPointZ), 90.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f), glm::vec3(-1, 0, 0)));
         startPointZ -= 4.0f;
     }
 
     // Left turn
     startPointZ -= WALL_SCALE_X / 2;
     for (int i = 0; i < 7; ++i) {
-        walls.push_back(WallSegment(glm::vec3(20.0f - i * 4.0f, WALL_OFFSET_Y, startPointZ+16.0f), 0.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f))); // Inner corner
-        walls.push_back(WallSegment(glm::vec3(32.0f - i * 4.0f, WALL_OFFSET_Y, startPointZ+4.0f), 180.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f)));  // Outer corner
+        walls.push_back(WallSegment(glm::vec3(20.0f - i * 4.0f, WALL_OFFSET_Y, startPointZ+16.0f), 0.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f), glm::vec3(0, 0, -1))); // Inner corner
+        walls.push_back(WallSegment(glm::vec3(32.0f - i * 4.0f, WALL_OFFSET_Y, startPointZ+4.0f), 180.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f), glm::vec3(0, 0, 1)));  // Outer corner
     }
 
     startPointZ += 14;
     // new hallway
     for (int i = 0;i < 20;++i) {
         if (i >= 3) {
-            walls.push_back(WallSegment(glm::vec3(6.0f, WALL_OFFSET_Y, startPointZ), 90.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f)));
+            walls.push_back(WallSegment(glm::vec3(6.0f, WALL_OFFSET_Y, startPointZ), 90.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f), glm::vec3(-1, 0, 0)));
         }
-        walls.push_back(WallSegment(glm::vec3(-6.0f, WALL_OFFSET_Y, startPointZ), -90.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f)));
+        walls.push_back(WallSegment(glm::vec3(-6.0f, WALL_OFFSET_Y, startPointZ), -90.0f, glm::vec3(4.0f, WALL_SCALE_Y, 0.1f), glm::vec3(1, 0, 0)));
         startPointZ -= 4.0f;
     }
 
@@ -163,25 +169,25 @@ std::vector<FloorSegment> generateFloorLayout() {
     std::vector<FloorSegment> floorTiles;
     float startPointZ = 60.0f;
     for (int i = 0;i < 10;++i) {
-        floorTiles.push_back(FloorSegment(glm::vec3(0.0f, 0.0f, startPointZ), 0.0f, glm::vec3(12.0f, 0.0f, 8.0f)));
+        floorTiles.push_back(FloorSegment(glm::vec3(0.0f, 0.0f, startPointZ), 0.0f, glm::vec3(12.0f, 0.0f, 8.0f), glm::vec3(0, 1, 0)));
         startPointZ -= 8.0f;
     }
     startPointZ += 10.0f;
     for (int i = 0;i < 2;++i) {
-        floorTiles.push_back(FloorSegment(glm::vec3(10.0f+i*8.0f, 0.0f, startPointZ), 0.0f, glm::vec3(8.0f, 0.0f, 12.0f)));
+        floorTiles.push_back(FloorSegment(glm::vec3(10.0f+i*8.0f, 0.0f, startPointZ), 0.0f, glm::vec3(8.0f, 0.0f, 12.0f), glm::vec3(0, 1, 0)));
     }
     startPointZ += 2.0f;
     for (int i = 0;i < 10;++i) {
-        floorTiles.push_back(FloorSegment(glm::vec3(28.0f, 0.0f, startPointZ), 0.0f, glm::vec3(12.0f, 0.0f, 8.0f)));
+        floorTiles.push_back(FloorSegment(glm::vec3(28.0f, 0.0f, startPointZ), 0.0f, glm::vec3(12.0f, 0.0f, 8.0f), glm::vec3(0, 1, 0)));
         startPointZ -= 8.0f;
     }
     startPointZ += 10.0f;
     for (int i = 0;i < 2;++i) {
-        floorTiles.push_back(FloorSegment(glm::vec3(18.0f - i * 8.0f, 0.0f, startPointZ), 0.0f, glm::vec3(8.0f, 0.0f, 12.0f)));
+        floorTiles.push_back(FloorSegment(glm::vec3(18.0f - i * 8.0f, 0.0f, startPointZ), 0.0f, glm::vec3(8.0f, 0.0f, 12.0f), glm::vec3(0, 1, 0)));
     }
     startPointZ += 2.0f;
     for (int i = 0;i < 10;++i) {
-        floorTiles.push_back(FloorSegment(glm::vec3(0.0f, 0.0f, startPointZ), 0.0f, glm::vec3(12.0f, 0.0f, 8.0f)));
+        floorTiles.push_back(FloorSegment(glm::vec3(0.0f, 0.0f, startPointZ), 0.0f, glm::vec3(12.0f, 0.0f, 8.0f), glm::vec3(0, 1, 0)));
         startPointZ -= 8.0f;
     }
     return floorTiles;
@@ -190,18 +196,20 @@ std::vector<FloorSegment> generateFloorLayout() {
 
 std::vector<DoorSegment> generateDoorsLayout() {
     std::vector<DoorSegment> doors;
-    doors.push_back(DoorSegment(glm::vec3(0.0f, WALL_OFFSET_Y, 64.0f),0.0f, glm::vec3(5.0f, WALL_SCALE_Y, 0.05f)));
-    doors.push_back(DoorSegment(glm::vec3(28.0f, WALL_OFFSET_Y, -36.0f), 0.0f, glm::vec3(5.0f, WALL_SCALE_Y, 0.05f)));
+    doors.push_back(DoorSegment(glm::vec3(0.0f, WALL_OFFSET_Y, 64.0f - 0.03f),0.0f, glm::vec3(5.0f, WALL_SCALE_Y, 0.05f), glm::vec3(0, 0, -1)));
+    doors.push_back(DoorSegment(glm::vec3(0.0f, WALL_OFFSET_Y, 64.0f + 0.03f), 0.0f, glm::vec3(5.0f, WALL_SCALE_Y, 0.05f), glm::vec3(0, 0, 1)));
+    doors.push_back(DoorSegment(glm::vec3(28.0f, WALL_OFFSET_Y, -36.0f -0.03f), 0.0f, glm::vec3(5.0f, WALL_SCALE_Y, 0.05f), glm::vec3(0, 0, -1)));
+    doors.push_back(DoorSegment(glm::vec3(28.0f, WALL_OFFSET_Y, -36.0f + 0.03f), 0.0f, glm::vec3(5.0f, WALL_SCALE_Y, 0.05f), glm::vec3(0, 0, 1)));
     return doors;
 }
 
 std::vector<LightSource> generateLightsLayout() {
     std::vector<LightSource> lights;
-    lights.push_back(LightSource(glm::vec3(4.0f, 9.0f, 34.0f), 0.0f, glm::vec3(0.7)));
-    lights.push_back(LightSource(glm::vec3(-4.0f, 9.0f, 34.0f), 0.0f, glm::vec3(0.7)));
+    lights.push_back(LightSource(glm::vec3(4.0f, 9.0f, 34.0f), 0.0f, glm::vec3(0.7), glm::vec3(0, -1, 0)));
+    lights.push_back(LightSource(glm::vec3(-4.0f, 9.0f, 34.0f), 0.0f, glm::vec3(0.7), glm::vec3(0, -1, 0)));
 
-    lights.push_back(LightSource(glm::vec3(32.0f, 9.0f, -62.0f), 0.0f, glm::vec3(0.7)));
-    lights.push_back(LightSource(glm::vec3(24.0f, 9.0f, -62.0f), 0.0f, glm::vec3(0.7)));
+    lights.push_back(LightSource(glm::vec3(32.0f, 9.0f, -62.0f), 0.0f, glm::vec3(0.7), glm::vec3(0, -1, 0)));
+    lights.push_back(LightSource(glm::vec3(24.0f, 9.0f, -62.0f), 0.0f, glm::vec3(0.7), glm::vec3(0, -1, 0)));
     return lights;
 }
 
@@ -287,7 +295,7 @@ void updateLightView(std::vector<LightSource>& lights, std::vector<HallwaySegmen
             destination->setLitBy(i, true);
             glm::vec3 rayDir = destination->getPosition() - lights[i].getPosition();
             Ray ray(lights[i].getPosition(), rayDir);
-            if (fabs(lights[i].getPosition().z - destination->getPosition().z) > Z_OFFSET / 2) 
+            if (fabs(lights[i].getPosition().z - destination->getPosition().z) > Z_OFFSET / 2)
             {
                 destination->setLitBy(i, false);
                 continue;
