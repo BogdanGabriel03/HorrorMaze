@@ -17,7 +17,7 @@ const float PITCH = 0.0f;
 const float SPEED = 35.0f;
 const float SENSITIVITY = 0.1f;
 const float ZOOM = 45.0f;
-const float GROUND_HEIGHT = 4.5f; // Add ground level constant
+const float GROUND_HEIGHT = 6.0f; // Add ground level constant
 
 class Camera
 {

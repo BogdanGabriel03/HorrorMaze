@@ -153,6 +153,7 @@
     <ClInclude Include="Collision.h" />
     <ClInclude Include="Hallway.h" />
     <ClInclude Include="Light.h" />
+    <ClInclude Include="Ray.h" />
     <ClInclude Include="Shader.h" />
   </ItemGroup>
   <ItemGroup>

@@ -48,6 +48,9 @@
     <ClInclude Include="Light.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="Ray.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fragment_paused.frag">

@@ -2,7 +2,8 @@
 #ifndef COLLISION_H
 #define COLLISION_H
 
-#include <glm/gtx/transform.hpp>
+#include <limits>
+#include "Ray.h"
 
 // using Oriented Bounding Box Collision
 struct OBBCollision {
@@ -59,5 +60,41 @@ inline bool checkOBBCollision(const OBBCollision& a, const OBBCollision& b) {
     return true;
 }
 
+inline bool rayIntersectsOBB(const Ray& ray, const OBBCollision& obb, float& tMinOut) {
+    float tMin = 0.0f;
+    float tMax = std::numeric_limits<float>::max();
+
+    glm::vec3 p = obb.center - ray.origin;
+
+    for (int i = 0;i < 3;++i) {
+        const glm::vec3& axis = obb.axis[i];
+        float e = glm::dot(axis, p);
+        float f = glm::dot(axis, ray.direction);
+
+        if (fabs(f) > 0.0001f) { // Avoid division by 0
+            float t1 = (e + obb.halfSize[i]) / f;
+            float t2 = (e - obb.halfSize[i]) / f;
+
+            if (t1 > t2) std::swap(t1, t2);
+
+            if (t1 > tMax || t2 < tMin) return false;
+
+            tMin = glm::max(tMin, t1);
+            tMax = glm::min(tMax, t2);
+
+            if (tMin > tMax) return false;
+        }
+        else {
+            // Ray is parallel to slab
+            if (-e - obb.halfSize[i] > 0.0f || -e + obb.halfSize[i] < 0.0f)
+                return false;
+        }
+    }
+    if (tMin > 0.0f) {
+        tMinOut = tMin;
+        return true;
+    }
+    return false;
+}
 
 #endif

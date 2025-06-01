@@ -8,14 +8,28 @@
 #include <glm/gtx/transform.hpp>
 #include "Collision.h"
 
+enum HALLWAY_SEGMENT_TYPE { WALL, FLOOR, DOOR, LIGHT};
+
+inline std::ostream& operator<<(std::ostream& os, const glm::vec3& vec) {
+    os << "(" << vec.x << ", " << vec.y << ", " << vec.z << ")";
+    return os;
+}
+
 class HallwaySegment {
 protected: 
     glm::vec3 position;
     float rotation;
-    float offset;
+    HALLWAY_SEGMENT_TYPE type;
     glm::vec3 scale;
     OBBCollision boundary;
+    bool litBy[4];
 public:
+    bool operator==(const HallwaySegment& other) const {
+        return this->position == other.position
+            && this->scale == other.scale
+            && this->rotation == other.rotation;
+    }
+
     void computeBoundary() {
         glm::vec3 halfScale = scale * 0.5f;
 
@@ -30,11 +44,16 @@ public:
         glm::vec3 rotatedY = glm::vec3(rotMat * glm::vec4(yAxis, 0.0));
         glm::vec3 rotatedZ = glm::vec3(rotMat * glm::vec4(zAxis, 0.0));
 
+        //if(i==6) std::cout << "Rotated axis:\n\tx: " << rotatedX << "\n\ty: " << rotatedY << "\n\tz: " << rotatedZ << "\n\n";
+
         boundary = OBBCollision(position, halfScale, rotatedX, rotatedY, rotatedZ);
     }
 
-    HallwaySegment(glm::vec3 pos, float rot, glm::vec3 scale, float offset)
-        : position(pos), rotation(rot), scale(scale),offset(offset) {
+    HallwaySegment(glm::vec3 pos, float rot, glm::vec3 scale, HALLWAY_SEGMENT_TYPE type)
+        : position(pos), rotation(rot), scale(scale),type(type) {
+        for (int i = 0;i < 4;++i) {
+            litBy[i] = 0;
+        }
         computeBoundary();
     }
 
@@ -57,17 +76,33 @@ public:
     glm::vec3 getScale() {
         return scale;
     }
-    float getOffset() {
-        return offset;
+    HALLWAY_SEGMENT_TYPE getType() {
+        return type;
     }
-    void setOffset(float _off) {
-        offset = _off;
+    void setOffset(HALLWAY_SEGMENT_TYPE _type) {
+        type = _type;
+    }
+    void setLitBy(int idx, bool val) {
+        if (idx >= 0 && idx <= 3) {
+            litBy[idx] = val;
+        }
+    }
+    bool getLitBy(int idx) {
+        return litBy[idx];
     }
 };
+
 class WallSegment : public HallwaySegment{
 public:
-    WallSegment(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor, float wallOff=0) : HallwaySegment(pos,rotAngle,scaleFactor,wallOff) {
+    WallSegment(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor, HALLWAY_SEGMENT_TYPE type=WALL) : HallwaySegment(pos,rotAngle,scaleFactor,type) {
         
+    }
+};
+
+class FloorSegment : public HallwaySegment {
+public:
+    FloorSegment(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor, HALLWAY_SEGMENT_TYPE type = FLOOR) : HallwaySegment(pos, rotAngle, scaleFactor, type) {
+
     }
 };
 
@@ -79,7 +114,7 @@ public:
     float _angle;
     float _openSpeed;
 
-    DoorSegment(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor, float DoorOffset=0, float angle=0) : HallwaySegment(pos, rotAngle, scaleFactor, DoorOffset) {
+    DoorSegment(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor, HALLWAY_SEGMENT_TYPE type=DOOR, float angle=0) : HallwaySegment(pos, rotAngle, scaleFactor, type) {
         _angle = angle;
         _isOpen = false;
         _isAnimating = false;
@@ -104,12 +139,11 @@ public:
         // Create rotation matrix
         glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(_angle), glm::vec3(0, 1, 0));
 
-        glm::vec3 pivotPoint = position + glm::vec3(scale.x * 0.5f, 0, 0);
+        glm::vec3 pivotPoint = position;
         glm::vec3 centerOffset = glm::vec3(scale.x * (0.5f - 0.5f), 0, 0);
-        glm::vec3 rotatedCenterOffset = glm::vec3(rotationMatrix * glm::vec4(centerOffset, 0.0f));
+        glm::vec3 rotatedCenterOffset = glm::vec3(rotationMatrix * glm::vec4(pivotPoint, 0.0f));
 
-        glm::vec3 finalCenter = pivotPoint + rotatedCenterOffset;
-
+        glm::vec3 finalCenter = rotatedCenterOffset;
         // Calculate axes
         glm::vec3 right = glm::vec3(rotationMatrix * glm::vec4(1, 0, 0, 0));
         glm::vec3 up = glm::vec3(0, 1, 0);
@@ -129,9 +163,9 @@ private:
     glm::vec3 lightColor;
     float intensity;
 public:
-    LightSource(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor, float lightOff = 0) : HallwaySegment(pos, rotAngle, scaleFactor, lightOff) {
+    LightSource(glm::vec3 pos, float rotAngle, glm::vec3 scaleFactor, HALLWAY_SEGMENT_TYPE type = LIGHT) : HallwaySegment(pos, rotAngle, scaleFactor, type) {
         lightColor = glm::vec3(0.6, 0.05, 0.05);
-        intensity = 0.1;
+        intensity = 0.08;
     }
 
     glm::vec3 getLightColor() { return lightColor; }
@@ -142,10 +176,12 @@ public:
 };
 
 GLuint createWallMesh();
+GLuint createFloorMesh();
 std::vector<WallSegment> generateWallLayout();
 std::vector<DoorSegment> generateDoorsLayout();
 std::vector<LightSource> generateLightsLayout();
-void updateHallway(std::vector<WallSegment>& walls, std::vector<DoorSegment>& doors, std::vector<LightSource>& lights, glm::vec3 playerPos, float);
-void updateFloor(float* floorOff, glm::vec3 playerPos);
+std::vector<FloorSegment> generateFloorLayout();
+void updateHallway(std::vector<HallwaySegment*>& segments, glm::vec3 playerPos, float);
+void updateLightView(std::vector<LightSource>&  lights, std::vector<HallwaySegment*>& segments);
 
 #endif
