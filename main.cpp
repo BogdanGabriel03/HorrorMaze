@@ -111,6 +111,48 @@ void mouse(int x, int y) {
 	}
 }
 
+void renderBitmapString(float x, float y, void* font, const char* str) {
+	// Save current state
+	glDisable(GL_DEPTH_TEST);
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	gluOrtho2D(0, SCR_WIDTH, 0, SCR_HEIGHT);
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	// Set raster position with proper y-inversion
+	glRasterPos2f(x, SCR_HEIGHT - y - 10);  // Adjust for font height
+
+	// Render each character
+	for (const char* c = str; *c != '\0'; c++) {
+		glutBitmapCharacter(font, *c);
+	}
+
+	// Restore state
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void renderMainMenu() {
+	// Set up blending for text
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Render text
+	glColor3f(1.0f, 0.0f, 0.0f);
+	renderBitmapString(SCR_WIDTH / 2 - 150, SCR_HEIGHT / 2,
+		GLUT_BITMAP_HELVETICA_18,
+		"Press any key to start game");
+
+	glDisable(GL_BLEND);
+}
+
 void mouseButton(int button, int state, int x, int y) {
 	if (state == GLUT_DOWN) {
 		if (button == 3) { // Scroll up
@@ -124,87 +166,100 @@ void mouseButton(int button, int state, int x, int y) {
 
 void keyboard(unsigned char key, int x, int y)
 {
-	const float cameraSpeed =2.5f * deltaTime;
-	glm::vec3 oldPos = camera.Position;
+	if (gameState == MAIN_MENU) {
+		gameState = IN_GAME;
+		return;
+	}
+	else if(gameState == IN_GAME) {
+		const float cameraSpeed = 2.5f * deltaTime;
+		glm::vec3 oldPos = camera.Position;
 
-	switch (key) {
-	case 'q':
-		flashlightOn = !flashlightOn;
-		break;
-	case 'f':
+		switch (key) {
+		case 'q':
+			flashlightOn = !flashlightOn;
+			break;
+		case 'f':
+			for (auto& door : hallwayDoors) {
+				float distance = glm::distance(camera.Position, door.getPosition());
+				//std::cout << distance << "\n";
+				if (distance < 10.0f && !door.isAnimating()) {
+					door.setIsAnimating(!door.isAnimating());
+					door.setIsOpen(!door.isOpen());
+				}
+			}
+			break;
+		case 'x':
+			if (inGameStateShaderProgramme != NULL) {
+				if (mixPercent <= 0.9) {
+					mixPercent += 0.1;
+					inGameStateShaderProgramme->setFloat("mixPercent", mixPercent);
+				}
+			}
+			break;
+		case 'c':
+			if (inGameStateShaderProgramme != NULL) {
+				if (mixPercent >= 0.1) {
+					mixPercent -= 0.1;
+					inGameStateShaderProgramme->setFloat("mixPercent", mixPercent);
+				}
+			}
+			break;
+		case 'w':
+			camera.ProcessKeyboard(FORWARD, deltaTime);
+			break;
+		case 's':
+			camera.ProcessKeyboard(BACKWARD, deltaTime);
+			break;
+		case 'a':
+			camera.ProcessKeyboard(LEFT, deltaTime);
+			break;
+		case 'd':
+			camera.ProcessKeyboard(RIGHT, deltaTime);
+			break;
+		case 'p':
+			gameState = GAME_PAUSED;
+			break;
+		default:
+			break;
+		};
+
+		OBBCollision cameraBox(
+			camera.Position,
+			glm::vec3(0.5f, 1.0f, 0.5f),             // dimensiuni (ajustează după nevoie)
+			camera.Right,
+			camera.Up,
+			glm::normalize(glm::cross(camera.Right, camera.Up))
+		);
+
+		bool collided = false;
+		for (auto& wall : hallwayWalls) {
+
+			if (checkOBBCollision(cameraBox, wall.getBoundary())) {
+				collided = true;
+				std::cout << "Collided with wall!\n";
+				break;
+			}
+		}
 		for (auto& door : hallwayDoors) {
-			float distance = glm::distance(camera.Position, door.getPosition());
-			//std::cout << distance << "\n";
-			if (distance < 10.0f && !door.isAnimating()) {
-				door.setIsAnimating(!door.isAnimating());
-				door.setIsOpen(!door.isOpen());
+			if (checkOBBCollision(cameraBox, door.getBoundary())) {
+				collided = true;
+				std::cout << "Collided with door!\n";
+				break;
 			}
 		}
-		break;
-	case 'x':
-		if (inGameStateShaderProgramme != NULL) {
-			if (mixPercent <= 0.9) {
-				mixPercent += 0.1;
-				inGameStateShaderProgramme->setFloat("mixPercent", mixPercent);
-			}
+		if (collided) {
+			camera.Position = oldPos;
 		}
-		break;
-	case 'c':
-		if (inGameStateShaderProgramme != NULL) {
-			if (mixPercent >= 0.1) {
-				mixPercent -= 0.1;
-				inGameStateShaderProgramme->setFloat("mixPercent", mixPercent);
-			}
-		}
-		break;
-	case 'w':
-		camera.ProcessKeyboard(FORWARD, deltaTime);
-		break;
-	case 's':
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
-		break;
-	case 'a':
-		camera.ProcessKeyboard(LEFT, deltaTime);
-		break;
-	case 'd':
-		camera.ProcessKeyboard(RIGHT, deltaTime);
-		break;
-	case 'p':
-		if (gameState == GAME_PAUSED) gameState = IN_GAME;
-		else if (gameState == IN_GAME) gameState = GAME_PAUSED;
-		break;
-	default:
-		break;
-	};
-
-	OBBCollision cameraBox(
-		camera.Position,
-		glm::vec3(0.5f, 1.0f, 0.5f),             // dimensiuni (ajustează după nevoie)
-		camera.Right,
-		camera.Up,
-		glm::normalize(glm::cross(camera.Right, camera.Up))
-	);
-
-	bool collided = false;
-	for (auto& wall : hallwayWalls) {
-
-		if (checkOBBCollision(cameraBox, wall.getBoundary())) {
-			collided = true;
-			std::cout << "Collided with wall!\n";
+	}
+	else if (gameState == GAME_PAUSED) {
+		switch (key) {
+		case 'p':
+			gameState = IN_GAME;
+			break;
+		default:
 			break;
 		}
 	}
-	for (auto& door : hallwayDoors) {
-		if (checkOBBCollision(cameraBox, door.getBoundary())) {
-			collided = true;
-			std::cout << "Collided with door!\n";
-			break;
-		}
-	}
-	if (collided) {
-		camera.Position = oldPos;
-	}
-
 	glutPostRedisplay();
 }
 
@@ -291,7 +346,7 @@ void createProgram() {
 	inGameStateShaderProgramme->setInt("doorTexture", 3);
 
 	pausedStateShaderProgramme->use();
-	pausedStateShaderProgramme->setVec4("overlayColor", glm::vec4(0, 0, 0, 0.75));
+	pausedStateShaderProgramme->setVec4("overlayColor", glm::vec4(0, 0, 0, 0.55));
 
 	// UNCOMMENT THIS TO DRAW IN WIREFRME POLYGONS
 	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -332,148 +387,152 @@ void Display() {
 	lastFrame = currentFrame;
 
 	// Handle cursor visibility
-	if (gameState == GAME_PAUSED) {
-		glutSetCursor(GLUT_CURSOR_LEFT_ARROW);
-	}
-	else {
+	if (gameState == IN_GAME) {
 		glutSetCursor(GLUT_CURSOR_NONE);
 	}
+	else {
+		glutSetCursor(GLUT_CURSOR_LEFT_ARROW);
+	}
 
-	updateHallway(hallwaySegments, camera.Position, deltaTime);
-	//updateFloor(floorOffset, camera.Position);
-	updateLightView(hallwayLights, hallwaySegments);
+	if (gameState == MAIN_MENU) {
+		renderMainMenu();
+	}
+	else {
+		updateHallway(hallwaySegments, camera.Position, deltaTime);
+		updateLightView(hallwayLights, hallwaySegments);
 
-	// ALWAYS RENDER THE 3D SCENE (whether paused or not)
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, floorTexture);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, ceilingTexture);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, wallTexture);
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, doorTexture);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, floorTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, ceilingTexture);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, wallTexture);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, doorTexture);
 	
-	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom),
-		(float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-	glm::mat4 view = camera.GetViewMatrix();
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom),
+			(float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		glm::mat4 view = camera.GetViewMatrix();
 
-	// ligth sources
-	lightsourceShaderProgramme->use();
-	lightsourceShaderProgramme->setMat4("projection", projection);
-	lightsourceShaderProgramme->setMat4("view", view);
-	lightsourceShaderProgramme->setFloat("xOffset", 0.0f);
+		// ligth sources
+		lightsourceShaderProgramme->use();
+		lightsourceShaderProgramme->setMat4("projection", projection);
+		lightsourceShaderProgramme->setMat4("view", view);
+		lightsourceShaderProgramme->setFloat("xOffset", 0.0f);
 
-	glBindVertexArray(light_vao);
+		glBindVertexArray(light_vao);
 
-	for (auto& light : hallwayLights) {
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, light.getPosition());
-		model = glm::rotate(model, light.getRotation(),glm::vec3(0,1,0));
-		lightsourceShaderProgramme->setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}
-
-	inGameStateShaderProgramme->use();
-	for (int i = 0; i < hallwayLights.size(); ++i) {
-		std::string base = "lights[" + std::to_string(i) + "]";
-		inGameStateShaderProgramme->setVec3(base + ".position", hallwayLights[i].getPosition());
-		inGameStateShaderProgramme->setVec3(base + ".color", hallwayLights[i].getLightColor());
-		inGameStateShaderProgramme->setFloat(base + ".intensity", hallwayLights[i].getLightIntensity());
-		inGameStateShaderProgramme->setFloat(base + ".constant", constant);
-		inGameStateShaderProgramme->setFloat(base + ".linear", linear);
-		inGameStateShaderProgramme->setFloat(base + ".quadratic", quadratic);
-	}
-	// the flashlight
-	inGameStateShaderProgramme->setBool("flashlightOn", flashlightOn);
-	inGameStateShaderProgramme->setVec3("flashlight.position", camera.Position);
-	inGameStateShaderProgramme->setVec3("flashlight.direction", camera.Front);
-	inGameStateShaderProgramme->setVec3("flashlight.color", glm::vec3(0.7,0.6,0.1));
-	inGameStateShaderProgramme->setFloat("flashlight.intensity", 0.6);
-	inGameStateShaderProgramme->setFloat("flashlight.cutOff", glm::cos(glm::radians(12.5f)));
-	inGameStateShaderProgramme->setFloat("flashlight.constant", 1.0f);
-	inGameStateShaderProgramme->setFloat("flashlight.linear", 0.09f);
-	inGameStateShaderProgramme->setFloat("flashlight.quadric", 0.032f);
-	inGameStateShaderProgramme->setFloat("flashlight.outerCutOff", glm::cos(glm::radians(17.5f)));
-
-	inGameStateShaderProgramme->setMat4("projection", projection);
-	inGameStateShaderProgramme->setMat4("view", view);
-
-	inGameStateShaderProgramme->setFloat("xOffset", 0.0f);
-	inGameStateShaderProgramme->setFloat("mixPercent", mixPercent);
-	inGameStateShaderProgramme->setVec3("viewPos", camera.Position);
-	//inGameStateShaderProgramme->setVec3("lightColor", glm::vec3(0.6, 0.05, 0.05));
-
-	// floor and ceiling
-	glBindVertexArray(floor_vao);
-	inGameStateShaderProgramme->setInt("useTextures", 0);
-
-	for (auto& floorTile : hallwayFloor) {
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, floorTile.getPosition());
-		model = glm::rotate(model, glm::radians(floorTile.getRotation()), glm::vec3(1, 0, 0));
-		model = glm::scale(model, floorTile.getScale());
-		inGameStateShaderProgramme->setMat4("model", model);
-		for (int i = 0;i < hallwayLights.size();++i) {
-			std::string base = "hitByLight[" + std::to_string(i) + "]";
-			inGameStateShaderProgramme->setBool(base, floorTile.getLitBy(i));
+		for (auto& light : hallwayLights) {
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, light.getPosition());
+			model = glm::rotate(model, light.getRotation(),glm::vec3(0,1,0));
+			lightsourceShaderProgramme->setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-	}
 
-	// walls 
-	glBindVertexArray(wall_vao);
-	inGameStateShaderProgramme->setInt("useTextures", 2);
-
-	for (auto& wall : hallwayWalls) {
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, wall.getPosition());
-		model = glm::rotate(model, glm::radians(wall.getRotation()), glm::vec3(0, 1, 0));
-		model = glm::scale(model, wall.getScale());
-		inGameStateShaderProgramme->setMat4("model", model);
-		for (int i = 0;i < hallwayLights.size();++i) {
-			std::string base = "hitByLight[" + std::to_string(i) + "]";
-			inGameStateShaderProgramme->setBool(base, wall.getLitBy(i));
+		inGameStateShaderProgramme->use();
+		for (int i = 0; i < hallwayLights.size(); ++i) {
+			std::string base = "lights[" + std::to_string(i) + "]";
+			inGameStateShaderProgramme->setVec3(base + ".position", hallwayLights[i].getPosition());
+			inGameStateShaderProgramme->setVec3(base + ".color", hallwayLights[i].getLightColor());
+			inGameStateShaderProgramme->setFloat(base + ".intensity", hallwayLights[i].getLightIntensity());
+			inGameStateShaderProgramme->setFloat(base + ".constant", constant);
+			inGameStateShaderProgramme->setFloat(base + ".linear", linear);
+			inGameStateShaderProgramme->setFloat(base + ".quadratic", quadratic);
 		}
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-	}
+		// the flashlight
+		inGameStateShaderProgramme->setBool("flashlightOn", flashlightOn);
+		inGameStateShaderProgramme->setVec3("flashlight.position", camera.Position);
+		inGameStateShaderProgramme->setVec3("flashlight.direction", camera.Front);
+		inGameStateShaderProgramme->setVec3("flashlight.color", glm::vec3(0.7,0.6,0.1));
+		inGameStateShaderProgramme->setFloat("flashlight.intensity", 0.6);
+		inGameStateShaderProgramme->setFloat("flashlight.cutOff", glm::cos(glm::radians(12.5f)));
+		inGameStateShaderProgramme->setFloat("flashlight.constant", 1.0f);
+		inGameStateShaderProgramme->setFloat("flashlight.linear", 0.09f);
+		inGameStateShaderProgramme->setFloat("flashlight.quadric", 0.032f);
+		inGameStateShaderProgramme->setFloat("flashlight.outerCutOff", glm::cos(glm::radians(17.5f)));
 
-	// doors
-	glBindVertexArray(door_vao);
-	inGameStateShaderProgramme->setInt("useTextures", 3);
+		inGameStateShaderProgramme->setMat4("projection", projection);
+		inGameStateShaderProgramme->setMat4("view", view);
 
-	for (auto& door : hallwayDoors) {
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, door.getPosition());
-		model = glm::translate(model, glm::vec3(-0.5f * 5.0f, 0.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(door._angle), glm::vec3(0, 1, 0));
-		model = glm::translate(model, glm::vec3(0.5f * 5.0f, 0.0f, 0.0f));
-		model = glm::scale(model, door.getScale());
-		inGameStateShaderProgramme->setMat4("model", model);
-		for (int i = 0;i < hallwayLights.size();++i) {
-			std::string base = "hitByLight[" + std::to_string(i) + "]";
-			inGameStateShaderProgramme->setBool(base, door.getLitBy(i));
+		inGameStateShaderProgramme->setFloat("xOffset", 0.0f);
+		inGameStateShaderProgramme->setFloat("mixPercent", mixPercent);
+		inGameStateShaderProgramme->setVec3("viewPos", camera.Position);
+		//inGameStateShaderProgramme->setVec3("lightColor", glm::vec3(0.6, 0.05, 0.05));
+
+		// floor and ceiling
+		glBindVertexArray(floor_vao);
+		inGameStateShaderProgramme->setInt("useTextures", 0);
+
+		for (auto& floorTile : hallwayFloor) {
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, floorTile.getPosition());
+			model = glm::rotate(model, glm::radians(floorTile.getRotation()), glm::vec3(1, 0, 0));
+			model = glm::scale(model, floorTile.getScale());
+			inGameStateShaderProgramme->setMat4("model", model);
+			for (int i = 0;i < hallwayLights.size();++i) {
+				std::string base = "hitByLight[" + std::to_string(i) + "]";
+				inGameStateShaderProgramme->setBool(base, floorTile.getLitBy(i));
+			}
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		}
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		// walls 
+		glBindVertexArray(wall_vao);
+		inGameStateShaderProgramme->setInt("useTextures", 2);
+
+		for (auto& wall : hallwayWalls) {
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, wall.getPosition());
+			model = glm::rotate(model, glm::radians(wall.getRotation()), glm::vec3(0, 1, 0));
+			model = glm::scale(model, wall.getScale());
+			inGameStateShaderProgramme->setMat4("model", model);
+			for (int i = 0;i < hallwayLights.size();++i) {
+				std::string base = "hitByLight[" + std::to_string(i) + "]";
+				inGameStateShaderProgramme->setBool(base, wall.getLitBy(i));
+			}
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		}
+
+		// doors
+		glBindVertexArray(door_vao);
+		inGameStateShaderProgramme->setInt("useTextures", 3);
+
+		for (auto& door : hallwayDoors) {
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, door.getPosition());
+			model = glm::translate(model, glm::vec3(-0.5f * 5.0f, 0.0f, 0.0f));
+			model = glm::rotate(model, glm::radians(door._angle), glm::vec3(0, 1, 0));
+			model = glm::translate(model, glm::vec3(0.5f * 5.0f, 0.0f, 0.0f));
+			model = glm::scale(model, door.getScale());
+			inGameStateShaderProgramme->setMat4("model", model);
+			for (int i = 0;i < hallwayLights.size();++i) {
+				std::string base = "hitByLight[" + std::to_string(i) + "]";
+				inGameStateShaderProgramme->setBool(base, door.getLitBy(i));
+			}
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		}
+		glm::mat4 model = glm::mat4(1.0f);
+		inGameStateShaderProgramme->setMat4("model", model);
+
+		inGameStateShaderProgramme->setInt("useTextures", -1);
+		inGameStateShaderProgramme->setVec4("objColor", glm::vec4(0.0, 1.0, 1.0, 1.0));
+
+		// Only render pause overlay if paused
+		if (gameState == GAME_PAUSED) {
+			glDisable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+			pausedStateShaderProgramme->use();
+			glBindVertexArray(pausedState_vao);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+			glDisable(GL_BLEND);
+			glEnable(GL_DEPTH_TEST);
+		}
 	}
-	glm::mat4 model = glm::mat4(1.0f);
-	inGameStateShaderProgramme->setMat4("model", model);
-
-	inGameStateShaderProgramme->setInt("useTextures", -1);
-	inGameStateShaderProgramme->setVec4("objColor", glm::vec4(0.0, 1.0, 1.0, 1.0));
-
-	// Only render pause overlay if paused
-	if (gameState == GAME_PAUSED) {
-		glDisable(GL_DEPTH_TEST);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		pausedStateShaderProgramme->use();
-		glBindVertexArray(pausedState_vao);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-		glDisable(GL_BLEND);
-		glEnable(GL_DEPTH_TEST);
-	}
+	
 
 	glutSwapBuffers();
 }
@@ -484,7 +543,7 @@ int main(int argc, char** argv)
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
 	glutInitWindowPosition(200, 200);
 	glutInitWindowSize(SCR_WIDTH, SCR_HEIGHT);
-	glutCreateWindow("SPG");
+	glutCreateWindow("Horror Maze");
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -502,7 +561,7 @@ int main(int argc, char** argv)
 	glutPassiveMotionFunc(mouse);  // Capturează cursorul
 	glutMouseFunc(mouseButton);
 
-	gameState = IN_GAME;
+	gameState = MAIN_MENU;
 	glutMainLoop();
 
 	delete inGameStateShaderProgramme;
